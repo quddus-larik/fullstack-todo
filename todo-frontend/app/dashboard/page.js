@@ -8,6 +8,7 @@ import { Plus } from 'lucide-react';
 import TaskModal from '../custom/components/TaskModal.jsx';
 import TaskCard from '../custom/components/TaskCards';
 import DashboardHeader from '../custom/components/WorkspaceHeader';
+import FriendList from '../custom/components/FriendList';
 
 export default function Dashboard() {
     const [user, setUser] = useState(null);
@@ -117,6 +118,7 @@ export default function Dashboard() {
                     activeGroupId={activeGroupId}
                     groupData={groupData}
                 />
+                <FriendList/>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {tasks.length > 0 ? tasks.map(task => (

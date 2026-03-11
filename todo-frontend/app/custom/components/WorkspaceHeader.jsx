@@ -1,6 +1,7 @@
 'use client'
 import { Plus } from 'lucide-react';
 import FriendSearch from './FriendSearch';
+import SocialActions from './FriendsModal';
 
 export default function DashboardHeader({ activeGroupId, groupData, onOpenModal }) {
     return (
@@ -13,7 +14,7 @@ export default function DashboardHeader({ activeGroupId, groupData, onOpenModal 
                 </div>
                 <h1 className="text-4xl font-black text-slate-900 tracking-tight">
                     {activeGroupId ? groupData?.name : "My Inbox"}
-                    <FriendSearch/>
+                    <SocialActions/>
                 </h1>
             </div>
 

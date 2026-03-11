@@ -132,6 +132,16 @@ class FriendshipViewset(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
+    @action(detail=False, methods=['get'])
+    def accepted_friends(self, request):
+        # Filter for only ACCEPTED friendships involving the current user
+        friends = Friendship.objects.filter(
+            (Q(creator=request.user) | Q(friend=request.user)),
+            status='accepted' # Crucial filter
+        )
+        serializer = FriendshipSerializer(friends, many=True)
+        return Response(serializer.data)
+    
     # NEW: This is the "Inbox" endpoint for the frontend
     @action(detail=False, methods=['get'])
     def requests(self, request):
