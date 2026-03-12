@@ -15,31 +15,31 @@ class UserSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 class FriendshipSerializer(serializers.ModelSerializer):
-    creator_details=UserSerializer(source='creator',read_only=True)
-    friend_details=UserSerializer(source='friend',read_only=True)
+    friend_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Friendship
-        fields = ['id', 'creator', 'friend', 'status', 'created_at', 'creator_details', 'friend_details']
-        read_only_fields = ['creator', 'status', 'created_at'] # Users shouldn't be able to "fake" these
+        fields = ['id', 'status', 'created_at', 'friend_info']
+        read_only_fields = ['status', 'created_at']
 
-    def validate_members_id(self,users):
-        user=self.context['request'].user
-
-        for friend in user:
-            if friend == user:
-                continue
-                        # Check for ANY accepted friendship between the creator and the target
-            is_friend = Friendship.objects.filter(
-                (Q(creator=user) & Q(friend=friend) | Q(creator=friend) & Q(friend=user)),
-                status='accepted'
-            ).exists()
-            if not is_friend:
-                raise serializers.ValidationError(
-                    f"You are not friends with {friend.username}. Add them as a friend first."
-                )
-        return users
-# 1. NEW: This powers the Sidebar and the "Member Picker"
+    # FIXED: This must be OUTSIDE Meta, but INSIDE the Serializer class
+    def get_friend_info(self, obj):
+        try:
+            request_user = self.context['request'].user
+            
+            # Logic to find the "other" person
+            if obj.creator == request_user:
+                other_user = obj.friend
+            else:
+                other_user = obj.creator
+                
+            return {
+                "id": other_user.id,
+                "username": other_user.username,
+                "email": other_user.email
+            }
+        except Exception:
+            return None# 1. NEW: This powers the Sidebar and the "Member Picker"
 class TaskGroupSerializer(serializers.ModelSerializer):
     members = UserSerializer(many=True, read_only=True)
     member_ids = serializers.PrimaryKeyRelatedField(

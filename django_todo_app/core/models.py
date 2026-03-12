@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 
 def get_deadline():
     return timezone.now() + timedelta(hours=24)
@@ -48,6 +49,30 @@ class Friendship(models.Model):
     friend=models.ForeignKey(User,related_name="friend_set",on_delete=models.CASCADE)
     status=models.CharField(max_length=10,choices=STATUS_CHOICES,default='pending')
     created_at=models.DateTimeField(auto_now_add=True)
+class Meta:
+        # This still prevents exact duplicates (A -> B, A -> B)
+    unique_together = ('creator', 'friend')
 
-    class Meta:
-        unique_together = ('creator', 'friend') # Prevents duplicate rows for the same pair
+    def clean(self):
+        # 1. Prevent Self-Friending
+        if self.creator == self.friend:
+            raise ValidationError("You cannot friend yourself. That's what a mirror is for.")
+
+        # 2. Prevent Mirror Relationships (B -> A if A -> B exists)
+        # We check if a row exists where the users are swapped
+        if not self.pk: # Only check on creation, not updates
+            exists = Friendship.objects.filter(
+                creator=self.friend, 
+                friend=self.creator
+            ).exists()
+            if exists:
+                raise ValidationError("A friendship request already exists between you two.")
+
+    def save(self, *args, **kwargs):
+        # We call full_clean() so that the 'clean' method above actually runs
+        # Django doesn't call clean() automatically on .save()!
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.creator.username} -> {self.friend.username} ({self.status})"

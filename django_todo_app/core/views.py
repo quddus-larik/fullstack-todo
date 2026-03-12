@@ -124,53 +124,43 @@ class TaskViewSet(viewsets.ModelViewSet):
 
 class FriendshipViewset(viewsets.ModelViewSet):
     serializer_class = FriendshipSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Return all friendships the user is part of
-        return Friendship.objects.filter(Q(creator=self.request.user) | Q(friend=self.request.user))
+        # Shows all friendships (pending, accepted, etc.) for the user
+        return Friendship.objects.filter(
+            Q(creator=self.request.user) | Q(friend=self.request.user)
+        )
 
     def perform_create(self, serializer):
+        # Sets the logged-in user as the one who sent the request
         serializer.save(creator=self.request.user)
 
     @action(detail=False, methods=['get'])
     def accepted_friends(self, request):
-        # Filter for only ACCEPTED friendships involving the current user
+        # Filter for confirmed friends only
         friends = Friendship.objects.filter(
             (Q(creator=request.user) | Q(friend=request.user)),
-            status='accepted' # Crucial filter
+            status='accepted'
         )
-        serializer = FriendshipSerializer(friends, many=True)
+        # We pass 'context' so the Serializer's get_friend_info knows who you are
+        serializer = FriendshipSerializer(friends, many=True, context={'request': request})
         return Response(serializer.data)
     
-    # NEW: This is the "Inbox" endpoint for the frontend
     @action(detail=False, methods=['get'])
     def requests(self, request):
+        # Filter for incoming requests where you are the recipient
         pending = Friendship.objects.filter(friend=request.user, status='pending')
-        serializer = FriendshipSerializer(pending, many=True)
+        # FIX: Added context={'request': request} here too!
+        serializer = FriendshipSerializer(pending, many=True, context={'request': request})
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
         friendship = self.get_object()
+        # Ensure only the person who RECEIVED the request can accept it
         if friendship.friend == request.user:
-            friendship.status = 'accepted' # ✅ Correct assignment
+            friendship.status = 'accepted'
             friendship.save()
-            return Response({"status": "Friendship Accepted"})
-        return Response({"error": "Unauthorized"}, status=403)
-    serializer_class=FriendshipSerializer
-
-    def get_queryset(self):
-        return Friendship.objects.filter(
-            Q(creator=self.request.user) | Q(friend=self.request.user)
-        )
-    def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
-
-    @action(detail=True,methods=['post'])
-    def accept(self,request,pk=None):
-        friendship=self.get_object()
-        if friendship.friend==request.user:
-            friendship.status=='accept'
-            friendship.save()
-            return Response({"status","Friendship Accepted"})
-        return Response({"Error","Not authorized"},status=status.HTTP_403_FORBIDDEN)
+            return Response({"status": "Friendship Accepted"}, status=status.HTTP_200_OK)
+        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
