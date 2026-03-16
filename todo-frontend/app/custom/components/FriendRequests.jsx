@@ -44,8 +44,9 @@ const FriendRequests = () => {
                     <div key={req.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
                         <div className="flex flex-col">
                             <span className="font-bold text-slate-800 text-sm">
-                                {req.creator_details?.username}
+                                {req.friend_info?.username}
                             </span>
+                            <span className='font-semibold text-slate-700 text-sm'>{req.friend_info?.email}</span>
                             <span className="text-xs text-slate-500">Sent you a request</span>
                         </div>
                         

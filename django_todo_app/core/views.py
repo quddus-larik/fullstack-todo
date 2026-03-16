@@ -127,13 +127,32 @@ class FriendshipViewset(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Shows all friendships (pending, accepted, etc.) for the user
-        return Friendship.objects.filter(
-            Q(creator=self.request.user) | Q(friend=self.request.user)
-        )
-
+        user = self.request.user
+        # Get IDs of people I'm already involved with
+        friend_ids = Friendship.objects.filter(
+            Q(creator=user) | Q(friend=user)
+        ).values_list('creator_id', 'friend_id')
+        
+        # Flatten the list of IDs
+        flattened_ids = {uid for tup in friend_ids for uid in tup}
+        
+        return User.objects.exclude(id__in=flattened_ids).order_by('username')
     def perform_create(self, serializer):
-        # Sets the logged-in user as the one who sent the request
+        friend = serializer.validated_data.get('friend')
+        
+        # 1. Prevent self-friending
+        if friend == self.request.user:
+            return Response({"error": "You cannot friend yourself."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 2. Prevent duplicates (Already friends or already requested)
+        exists = Friendship.objects.filter(
+            (Q(creator=self.request.user, friend=friend) | Q(creator=friend, friend=self.request.user))
+        ).exists()
+
+        if exists:
+            # We don't want to save a duplicate
+            return # The serializer's internal validation will usually catch this if you added it there
+        
         serializer.save(creator=self.request.user)
 
     @action(detail=False, methods=['get'])
@@ -157,10 +176,28 @@ class FriendshipViewset(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
-        friendship = self.get_object()
-        # Ensure only the person who RECEIVED the request can accept it
-        if friendship.friend == request.user:
+        try:
+            # We manually fetch it to see exactly what's wrong
+            friendship = Friendship.objects.get(pk=pk)
+            
+            # Check if the logged-in user is the receiver
+            if friendship.friend != request.user:
+                return Response({"error": "Only the recipient can accept this."}, status=403)
+            
             friendship.status = 'accepted'
             friendship.save()
-            return Response({"status": "Friendship Accepted"}, status=status.HTTP_200_OK)
-        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"status": "Friendship Accepted"}, status=200)
+            
+        except Friendship.DoesNotExist:
+            return Response({"error": "Friendship request not found."}, status=404)
+        except Exception as e:
+            # This will print the exact error in your terminal
+            print(f"CRITICAL ERROR: {e}")
+            return Response({"error": str(e)}, status=500)
+    
+    def destroy(self, request, *args, **kwargs):
+        friendship = self.get_object()
+        # Only the creator or the receiver can cancel/delete a friendship
+        if friendship.creator != request.user and friendship.friend != request.user:
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)

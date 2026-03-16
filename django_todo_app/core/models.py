@@ -52,7 +52,7 @@ class Friendship(models.Model):
 class Meta:
         # This still prevents exact duplicates (A -> B, A -> B)
     unique_together = ('creator', 'friend')
-    ordering = ['-created_at']
+    ordering = ['-id']
     def clean(self):
         # 1. Prevent Self-Friending
         if self.creator == self.friend:

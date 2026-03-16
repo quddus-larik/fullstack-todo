@@ -7,6 +7,7 @@ const FriendSearch = () => {
     const [query, setQuery] = useState('')
     const [results, setResults] = useState([])
     const [loading, setLoading] = useState(false)
+    const [sending,setsending] = useState(false)
 
     // THE SEARCH LOGIC
     const handleSearch = async (e) => {
@@ -31,6 +32,7 @@ const FriendSearch = () => {
 
     // THE ADD LOGIC
     const sendFriendRequest = async (userId) => {
+        setsending(true)
         try {
             await api.post('/friendships/', { friend: userId })
             alert("Request Sent!")
@@ -39,6 +41,7 @@ const FriendSearch = () => {
         } catch (err) {
             alert("Already friends or request pending.")
         }
+        setsending(false)
     }
 
     return (
@@ -64,7 +67,13 @@ const FriendSearch = () => {
                             onClick={() => sendFriendRequest(user.id)}
                             className="flex items-center gap-1 text-sm bg-white border border-indigo-200 text-indigo-600 px-3 py-1 rounded-md hover:bg-indigo-50"
                         >
-                            <UserPlus size={16} /> Add
+                    {sending ? (
+                            <span className="animate-pulse">Sending...</span>
+                        ) : (
+                            <>
+                                <UserPlus size={16} /> Add
+                            </>
+                        )}
                         </button>
                     </div>
                 ))}
