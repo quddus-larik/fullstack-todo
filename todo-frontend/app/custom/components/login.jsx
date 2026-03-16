@@ -6,11 +6,12 @@ const LoginPage = () => {
     const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
     const router = useRouter() // Consistent naming
+    const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
 
     async function handleLogin(e) {
         e.preventDefault()
         try {
-            const res = await fetch("http://127.0.0.1:8000/api/login", {
+            const res = await fetch(`${BACKEND_URL}/api/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, password })
