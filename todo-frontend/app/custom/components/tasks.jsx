@@ -1,12 +1,14 @@
 'use client'
 import React from 'react'
-import { useTasks } from '@/hooks/useData' // This is all you need
+import { useTasks } from '@/hooks/useData' 
+
+import { LoaderOne } from '@/components/ui/loader';
 
 const Tasks = () => {
     // SWR handles the token, the base URL, the loading state, and the error state.
     const { tasks, isLoading, isError } = useTasks();
 
-    if (isLoading) return <div className="p-4 text-slate-500">Fetching your digital life...</div>;
+    if (isLoading) return <LoaderOne/>;
     
     // Note: isError is usually an object. We check for its existence.
     if (isError) return <div className="p-4 text-red-500">Error syncing tasks. Check your connection.</div>;

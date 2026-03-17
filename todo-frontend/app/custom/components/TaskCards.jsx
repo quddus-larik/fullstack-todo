@@ -1,7 +1,10 @@
 'use client'
+import { LoaderOne } from '@/components/ui/loader';
 import { Calendar, Trash2, Clock, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
 
-export default function TaskCard({ task, onDelete, onToggle }) {
+export default function TaskCard({ task, onDelete, onToggle ,istoggling,isDeleting}) {
+
     return (
         <div className="group bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all duration-300 relative overflow-hidden">
             <div className="flex justify-between items-start mb-4">

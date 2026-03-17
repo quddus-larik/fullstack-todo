@@ -28,7 +28,7 @@ const handleSignup = async (e) => {
 
         setIsLoading(true)
         try {
-            const res = await api.post("/register/", {
+            const res = await api.post("register/", {
                 username: formData.username,
                 email: formData.email,
                 password: formData.password

@@ -19,8 +19,11 @@ export default function Dashboard() {
     const searchParams = useSearchParams();
     const activeGroupId = searchParams.get('group');
     const [newTask, setNewTask] = useState({ title: '', description: '', deadline: '' });
+    const [isDeleting, setisDeleting] = useState(false)
+    const [istoggling,setistoggling] = useState(false)
 
     useEffect(() => {
+        console.log(process.env.NEXT_PUBLIC_API_URL)
         const fetchData = async () => {
             setLoading(true);
             try {
@@ -70,6 +73,7 @@ export default function Dashboard() {
     };
 
     const handleToggle = async (taskId) => {
+        setistoggling(true)
         try {
             const res = await api.post(`tasks/${taskId}/toggle/`);
             setTasks(prev => prev.map(t => 
@@ -78,10 +82,12 @@ export default function Dashboard() {
         } catch (err) {
             alert("Permission denied!");
         }
+        setistoggling(false)
     };
 
     const handleDeleteTask = async (taskId) => {
         if (!window.confirm("Delete this task?")) return;
+        setisDeleting(true)
         const previousTasks = [...tasks];
         setTasks(tasks.filter(t => t.id !== taskId));
 
@@ -91,6 +97,7 @@ export default function Dashboard() {
             setTasks(previousTasks);
             alert("Delete failed.");
         }
+        setisDeleting(false)
     };
 
     if (loading) return (
@@ -126,7 +133,9 @@ export default function Dashboard() {
                             key={task.id} 
                             task={task} 
                             onDelete={handleDeleteTask} 
-                            onToggle={handleToggle} 
+                            onToggle={handleToggle}
+                            isDeleting
+                            istoggling 
                         />
                     )) : (
                         <div className="col-span-full py-20 flex flex-col items-center justify-center bg-white rounded-3xl border-2 border-dashed border-slate-200">

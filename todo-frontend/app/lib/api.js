@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api=axios.create({
-    baseURL: process.env.REACT_APP_API_URL ||'http://127.0.0.1:8000/api/',
+    baseURL: process.env.NEXT_PUBLIC_API_URL ,
     headers: {
         'Content-Type': 'application/json',
     }
@@ -15,7 +15,8 @@ if (token) {
         console.log("Interceptor: Token Found and Attached"); // DEBUG LINE
         config.headers.Authorization = `Bearer ${token}`;
     } else {
-        console.warn("Interceptor: No Token found in LocalStorage"); // DEBUG LINE
+        console.warn("Interceptor: No Token found in LocalStorage");
+        console.log(process.env.NEXT_PUBLIC_API_URL) // DEBUG LINE
     }
     return config;
 },(error)=>{return Promise.reject(error)}

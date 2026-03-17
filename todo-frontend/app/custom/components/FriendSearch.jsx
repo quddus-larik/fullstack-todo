@@ -24,7 +24,7 @@ const FriendSearch = () => {
         setSearchPerformed(true)
         
         try {
-            const res = await api.get(`users/search/?search=${query}/`)
+            const res = await api.get(`users/search/?q=${query}`)
             const data = res.data.results || res.data
             const resultsArray = Array.isArray(data) ? data : []
             setResults(resultsArray)
@@ -51,7 +51,7 @@ const FriendSearch = () => {
     const sendFriendRequest = async (userId) => {
         setSendingId(userId)
         try {
-            await api.post('/friendships/', { friend: userId })
+            await api.post('friendships/', { friend: userId })
             mutate('friendships/requests/')
             
             // Show success feedback

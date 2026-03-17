@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import api from '@/app/lib/api' 
 import { useFriends } from '@/hooks/useData'
+import { LoaderOne } from '@/components/ui/loader'
 
 const FriendList = () => {
     const {friends,isLoading}=useFriends()
@@ -9,7 +10,7 @@ const FriendList = () => {
     
     if (isLoading){
         return(
-            <div>Loading</div>
+            <LoaderOne/>
         )
     };
     console.log(friends)

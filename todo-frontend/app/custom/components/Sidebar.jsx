@@ -8,7 +8,9 @@ import {
 } from "@/components/ui/sidebar"
 import { useGroups } from "@/hooks/useData"
 import api from "../../lib/api"
+import useSWR from "swr"
 import { cn } from "@/lib/utils"
+import { fetcher } from "../../lib/api"
 
 export function AppSidebar({ onOpenModal }) {
   const router = useRouter()
@@ -20,6 +22,8 @@ export function AppSidebar({ onOpenModal }) {
     localStorage.clear()
     router.push('/login')
   }
+  const { data: user } = useSWR('/me/', fetcher)
+  console.log(user)
 
   const navigateToGroup = (id) => {
     if (id) {
@@ -186,7 +190,8 @@ export function AppSidebar({ onOpenModal }) {
         
         {/* User Info (Optional) */}
         <div className="mt-2 px-3 py-2 text-xs text-gray-400 border-t border-gray-100">
-          <p className="truncate">Signed in as User</p>
+          <p className="truncate">Signed in as {user?.username}
+          </p>
         </div>
       </SidebarFooter>
     </Sidebar>
