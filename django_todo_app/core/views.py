@@ -13,15 +13,26 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import generics, permissions, filters
 
 class UserSearchView(generics.ListAPIView):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+    # Keep these, but we'll make get_queryset smarter
     filter_backends = [filters.SearchFilter]
-    search_fields = ['username'] # This allows ?search=username in the URL
+    search_fields = ['username']
 
     def get_queryset(self):
-        # Don't show the logged-in user in the search results!
-        return User.objects.exclude(id=self.request.user.id).order_by('username')
+        # 1. Start with everyone EXCEPT the logged-in user
+        queryset = User.objects.exclude(id=self.request.user.id)
+        
+        # 2. Get the 'q' parameter from the URL (?q=...)
+        # Note: If your frontend uses ?search=, SearchFilter handles it.
+        # If your frontend uses ?q=, we handle it manually here:
+        query = self.request.query_params.get('q', None)
+        
+        if query:
+            # __icontains is essential for PostgreSQL (Neon)
+            queryset = queryset.filter(username__icontains=query)
+            
+        return queryset.order_by('username')
 class RegisterView(APIView):
     # 🚨 CRITICAL: Allow anyone to access this, otherwise they can't sign up!
     permission_classes = [permissions.AllowAny]
