@@ -1,5 +1,15 @@
 import useSWR from "swr";
 
+
+export function useUser() {
+    const { data, error, isLoading } = useSWR('me/', (url) => api.get(url).then(res => res.data));
+    return {
+        user: data,
+        isError: error,
+        isUserLoading: isLoading
+    };
+}
+
 export function useTasks() {
     // SWR uses the global fetcher from RootLayout
     const { data, error, mutate } = useSWR('/tasks/');
