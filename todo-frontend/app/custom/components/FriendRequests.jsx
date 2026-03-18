@@ -10,7 +10,7 @@ const FriendRequests = () => {
 
     const handleAccept = async (id) => {
         try {
-            await api.post(`/friendships/${id}/accept/`)
+            await api.post(`friendships/${id}/accept/`)
             // 2. Tell SWR the data changed; it will re-fetch automatically
             mutateRequests() 
         } catch (err) {
