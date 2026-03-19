@@ -41,8 +41,10 @@ export default function TaskCard({ task, onDelete, onToggle ,istoggling,isDeleti
                     <span className="text-[10px] font-bold text-slate-400">{task.creator_name}</span>
                     <Image
                         src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.creator_name}`} 
-                        className="h-6 w-6 rounded-full bg-slate-100"
+                        className="rounded-full bg-slate-100"
                         alt="avatar"
+                        width={24}
+                        height={24}
                     />
                 </div>
             </div>

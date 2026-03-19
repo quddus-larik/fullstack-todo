@@ -25,8 +25,11 @@ export default function DashboardHeader({ activeGroupId, groupData, onOpenModal 
                         {groupData.members.slice(0, 5).map((m) => (
                             <div key={m.id} className="relative group">
                                 <Image
+                                    
                                     src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${m.username}`}
-                                    className="h-10 w-10 rounded-full border-2 border-white bg-slate-200 hover:z-10 transition-transform hover:scale-110 cursor-help"
+                                    className="rounded-full border-2 border-white bg-slate-200 hover:z-10 transition-transform hover:scale-110 cursor-help"
+                                    width={40}
+                                    height={40}
                                     alt={m.username}
                                 />
                                 <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">

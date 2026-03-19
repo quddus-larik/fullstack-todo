@@ -1,15 +1,22 @@
 "use client";
+
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { SWRConfig } from "swr";
 import fetcher from "@/app/lib/api";
-import { SidebarProvider } from "@/components/ui/sidebar";
+
+import {
+  SidebarProvider,
+  SidebarInset
+} from "@/components/ui/sidebar";
+
 import { AppSidebar } from "@/app/custom/components/Sidebar";
 import CreateGroupModal from "@/app/custom/components/CreateGroupModal";
 
 export default function ClientWrapper({ children }) {
   const pathname = usePathname();
   const isPublicPage = pathname === "/login" || pathname === "/signup";
+
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
 
   const swrOptions = {
@@ -24,14 +31,18 @@ export default function ClientWrapper({ children }) {
   return (
     <SWRConfig value={swrOptions}>
       <SidebarProvider>
-        <div className="flex min-h-screen w-full">
-          <AppSidebar onOpenModal={() => setIsCreateGroupOpen(true)} />
-          <main className="flex-1">{children}</main>
-          <CreateGroupModal 
-            isOpen={isCreateGroupOpen} 
-            onClose={() => setIsCreateGroupOpen(false)} 
-          />
-        </div>
+
+        <AppSidebar onOpenModal={() => setIsCreateGroupOpen(true)} />
+
+        <SidebarInset className="flex flex-col min-h-screen">
+          {children}
+        </SidebarInset>
+
+        <CreateGroupModal
+          isOpen={isCreateGroupOpen}
+          onClose={() => setIsCreateGroupOpen(false)}
+        />
+
       </SidebarProvider>
     </SWRConfig>
   );
