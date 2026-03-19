@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from .models import Task, TaskGroup, Friendship
 from django.utils import timezone
-from .models import Task, TaskGroup,Friendship
 from datetime import timedelta
 from django.db.models import Q
 
@@ -38,16 +38,12 @@ class FriendshipSerializer(serializers.ModelSerializer):
         friend = data.get('friend')
         if creator == friend:
             raise serializers.ValidationError("You cannot friend yourself.")
-
         exists = Friendship.objects.filter(
             Q(creator=creator, friend=friend) | Q(creator=friend, friend=creator)
         ).exists()
-
         if exists:
             raise serializers.ValidationError("A request or friendship already exists.")
-
         return data
-
 
 class TaskGroupSerializer(serializers.ModelSerializer):
     members = UserSerializer(many=True, read_only=True)
@@ -60,55 +56,41 @@ class TaskGroupSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description', 'creator', 'members', 'member_ids', 'created_at']
         read_only_fields = ['creator']
 
-    # THIS is where the friendship check belongs!
     def validate_member_ids(self, data):
         request_user = self.context['request'].user
         for member in data:
             if member == request_user: continue
-            
-            # Ensure an accepted friendship exists
             exists = Friendship.objects.filter(
                 (Q(creator=request_user, friend=member) | Q(creator=member, friend=request_user)),
                 status='accepted'
             ).exists()
-            
             if not exists:
                 raise serializers.ValidationError(f"You aren't friends with {member.username}")
         return data
+
 class TaskSerializer(serializers.ModelSerializer):
     creator_name = serializers.ReadOnlyField(source='creator.username')
     creator_id = serializers.ReadOnlyField(source='creator.id')
-    # Show the name in the UI, but use ID for the database update
     assigned_to_username = serializers.ReadOnlyField(source='assigned_to.username')
-
     deadline = serializers.DateTimeField(required=False, allow_null=True)
-    
+
     class Meta:
         model = Task
-        fields = [
-            'id', 'title', 'description', 'deadline', 
-            'completed', 'assigned_to', 'assigned_to_username', 
-            'creator_id','creator_name', 'group'
-        ]
+        fields = ['id', 'title', 'description', 'deadline', 'completed',
+                  'assigned_to', 'assigned_to_username', 'creator_id','creator_name', 'group']
 
-    # 2. VALIDATION: Keeping your deadline check
     def validate_deadline(self, value):
         if value is None:
-            return  timezone.now() + timedelta(hours=24)
-
-        if value and value < timezone.now():
+            return timezone.now() + timedelta(hours=24)
+        if value < timezone.now():
             raise serializers.ValidationError("Deadline cannot be in the past.")
         return value
 
-    # 3. BRUTAL LOGIC: Enforce the "Group-Only Assignment"
     def validate(self, data):
         group = data.get('group')
         assigned_to = data.get('assigned_to')
-
-        # If a group is set and an assignee is chosen, they MUST be in that group
-        if group and assigned_to:
-            if assigned_to not in group.members.all():
-                raise serializers.ValidationError(
-                    {"assigned_to": "That user is not a member of this workspace!"}
-                )
+        if group and assigned_to and assigned_to not in group.members.all():
+            raise serializers.ValidationError(
+                {"assigned_to": "That user is not a member of this workspace!"}
+            )
         return data

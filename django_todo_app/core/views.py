@@ -5,13 +5,12 @@ from rest_framework.views import APIView
 from django.db.models import Q
 from .models import Task, TaskGroup, Friendship
 from .serializers import TaskSerializer, TaskGroupSerializer, UserSerializer, FriendshipSerializer
-
-
+from rest_framework import viewsets, permissions, status
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from rest_framework import generics, permissions, filters
-
+from rest_framework import serializers  # for DRF validation errors
+from django.core.exceptions import ValidationError  # for Django model clean/save errors
 class UserSearchView(generics.ListAPIView):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -133,6 +132,9 @@ class TaskViewSet(viewsets.ModelViewSet):
     
     #4 Adding Friends
 
+
+
+# --- Friendships ---
 class FriendshipViewset(viewsets.ModelViewSet):
     serializer_class = FriendshipSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -142,54 +144,29 @@ class FriendshipViewset(viewsets.ModelViewSet):
         return Friendship.objects.filter(Q(creator=user) | Q(friend=user))
 
     def perform_create(self, serializer):
-        # Friend request creation logic
-        serializer.save(creator=self.request.user)
-
-    @action(detail=False, methods=['get'])
-    def discover_people(self, request):
-        """
-        Return users who are NOT friends with the current user yet
-        """
-        user = request.user
-        # all relationships involving user
-        friend_ids = Friendship.objects.filter(
-            Q(creator=user) | Q(friend=user)
-        ).values_list('creator_id', 'friend_id')
-        # flatten IDs
-        excluded_ids = {uid for tup in friend_ids for uid in tup}
-        excluded_ids.add(user.id)  # exclude self
-
-        users = User.objects.exclude(id__in=excluded_ids).order_by('username')
-        serializer = UserSerializer(users, many=True, context={'request': request})
-        return Response(serializer.data)
+        try:
+            serializer.save(creator=self.request.user)
+        except ValidationError as e:
+            raise serializers.ValidationError({"error": e.messages})
 
     @action(detail=False, methods=['get'])
     def requests(self, request):
-        """
-        Return incoming friend requests (status='pending')
-        """
         pending = Friendship.objects.filter(friend=request.user, status='pending')
-        serializer = self.get_serializer(pending, many=True)  # context is automatically passed
+        serializer = self.get_serializer(pending, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
-        """
-        Accept a specific friend request
-        """
         friendship = self.get_object()
         if friendship.friend != request.user:
             return Response({"error": "Only the recipient can accept this."}, status=status.HTTP_403_FORBIDDEN)
         friendship.status = 'accepted'
         friendship.save()
         serializer = self.get_serializer(friendship)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
     def accepted_friends(self, request):
-        """
-        Return confirmed friends (status='accepted')
-        """
         user = request.user
         friends = Friendship.objects.filter(
             Q(creator=user) | Q(friend=user),
@@ -197,9 +174,3 @@ class FriendshipViewset(viewsets.ModelViewSet):
         )
         serializer = self.get_serializer(friends, many=True)
         return Response(serializer.data)
-
-    def destroy(self, request, *args, **kwargs):
-        friendship = self.get_object()
-        if friendship.creator != request.user and friendship.friend != request.user:
-            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
-        return super().destroy(request, *args, **kwargs)
